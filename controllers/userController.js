@@ -1,6 +1,7 @@
 import {check, validationResult} from 'express-validator';
 import Usuario from '../models/Usuario.js';
 import  { generarId } from '../helpers/tokens.js';
+import { emailRegistro } from '../helpers/emails.js';
 
 const home = (req,resp)=>{
     resp.send("Hola desde el router");
@@ -48,15 +49,52 @@ const registrar = async (req, resp)=>{
         })
    }
    // Almacenar datos
-   await Usuario.create({
+   const user = await Usuario.create({
     nombre,
     email,
     password,
     token: generarId()
    }); 
+   // Enviar email
+   emailRegistro({ 
+        nombre: user.nombre,
+        email: user.email,
+        token: user.token
+    });
    
-   resp.render('auth/registro', { pagina: 'Crear Cuenta'});
+   resp.render('templace/mensaje', { 
+    pagina: 'Cuenta Creada Correctamente.',
+    mensaje: 'Hemos Enviado un Email de Confirmación, presiona en el enlace que encontrara en el email.'
+});
  
+}
+const confirmar = async (req, resp)=>{
+    // Comfirmar la cuenta
+    // vemos si el emailexite
+    const { token } = req.params;
+    //console.log(token);
+    // Verificar si el toke es valido y confirmamos cuenta
+    const usuario = await Usuario.findOne({
+        where: { token }
+    });
+    if (!usuario){
+        return resp.render('auth/confirmar-cuenta',{
+            pagina: 'ERROR al confirmar la cuenta.',
+            mensaje: 'Hubo un error al confirmar tu cuenta, intenta de nuevo pasados unos minutos...',
+            error: true
+        })
+    }
+    // Validar y quitar token
+    usuario.token = null;
+    usuario.confirmado = true;
+    await usuario.save(); // desta forma volvemos se actualiza los datos
+    // Cuenta no confirmada correctamente
+    resp.render('auth/confirmar-cuenta',{
+        pagina: 'Cuenta Confirmación',
+        mensaje: 'Gracias, su cuenta ha sido confirmada correctament'
+    })
+
+
 }
 const formularioOlvidePassword = (req, resp)=>{
     resp.render("auth/olvide-password", { pagina : "Recuperar Password" } );
@@ -66,5 +104,6 @@ export {
     formularioLogin,
     formularioRegistro,
     registrar,
+    confirmar,
     formularioOlvidePassword
 }

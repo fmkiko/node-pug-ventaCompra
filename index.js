@@ -2,7 +2,7 @@ import express from 'express';
 import userRouter from './router/router.js';
 import db from './config/db.js';
 
-const port = 3000;
+
 const app = express();
 
 // Archivos estaticos
@@ -26,7 +26,8 @@ try{
 }
 
 
-
-app.listen(port, "127.0.0.1", ()=>{
-    console.log(`Server running in 127.0.0.1:${port}`);
+const port = process.env.PORT || 3000;
+const url = process.env.URL || '127.0.0.1';
+app.listen(port, url, ()=>{
+    console.log(`Server running in ${url}:${port}`);
 });
